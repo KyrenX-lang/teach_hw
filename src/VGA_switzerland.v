@@ -1,9 +1,6 @@
 /*
- * Copyright (c) 2024 Tiny Tapeout LTD
+ * Copyright (c) 2024 Uri Shaked
  * SPDX-License-Identifier: Apache-2.0
- * Author: Uri Shaked
- *
- * Modified to draw a Switzerland flag with 6-bit RGB VGA color.
  */
 
 `default_nettype none
@@ -30,25 +27,18 @@ module tt_um_vga_example (
     wire [9:0] pix_y;
 
     // TinyVGA PMOD output mapping
-    assign uo_out = {
-        hsync,
-        B[0],
-        G[0],
-        R[0],
-        vsync,
-        B[1],
-        G[1],
-        R[1]
-    };
+    assign uo_out = {hsync, B[0], G[0], R[0], vsync, B[1], G[1], R[1]};
 
     // Unused bidirectional pins
-    assign uio_out = 8'b00000000;
-    assign uio_oe  = 8'b00000000;
+    assign uio_out = 0;
+    assign uio_oe  = 0;
 
     // Suppress unused-signal warnings
     wire _unused_ok = &{ena, ui_in, uio_in};
+    
+    // reg [9:0] counter;
 
-    // VGA timing generator
+  
     hvsync_generator vga_sync_gen (
         .clk        (clk),
         .reset      (~rst_n),
