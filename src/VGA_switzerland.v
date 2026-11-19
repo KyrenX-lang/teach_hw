@@ -60,11 +60,11 @@ module tt_um_vga_example (
     );
 
     
-    wire flag_red;
-    wire cross_vertical;
-    wire cross_horizontal;
-    wire cross_white;
-    wire [5:0] pixel_color;
+    reg flag_red;
+    reg cross_vertical;
+    reg cross_horizontal;
+    reg cross_white;
+    reg [5:0] pixel_color;
 
     
     assign flag_red = (pix_x >= 1) && (pix_x < 1000) &&
