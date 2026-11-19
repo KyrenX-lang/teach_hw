@@ -1,90 +1,194 @@
 /*
- * Copyright (c) 2024 Uri Shaked
+
+ * Copyright (c) 2024 Tiny Tapeout LTD
+
  * SPDX-License-Identifier: Apache-2.0
+
+ * Author: Uri Shaked
+
+ 
+
+ 
+
+ - Modified by Pongsgon Vichitvejpaisal to
+
+  load 320x240 6-bit color image
+
  */
 
-`default_nettype none
+ `default_nettype none
+parameter IMG_SIZE = 320;  // Size of the image in pixels
+parameter MUL_FACTOR = 2;   // vga_res/img_size
+parameter DISPLAY_WIDTH = 640;  // VGA display width
+
+parameter DISPLAY_HEIGHT = 480;  // VGA display height
+
+ `define COLOR_WHITE 3'd7
 
 module tt_um_vga_example (
-    input  wire [7:0] ui_in,
-    output wire [7:0] uo_out,
-    input  wire [7:0] uio_in,
-    output wire [7:0] uio_out,
-    output wire [7:0] uio_oe,
-    input  wire       ena,
-    input  wire       clk,
-    input  wire       rst_n
+
+    input  wire [7:0] ui_in,    // Dedicated inputs
+
+    output wire [7:0] uo_out,   // Dedicated outputs
+
+    input  wire [7:0] uio_in,   // IOs: Input path
+
+    output wire [7:0] uio_out,  // IOs: Output path
+
+    output wire [7:0] uio_oe,   // IOs: Enable path (active high: 0=input, 1=output)
+
+    input  wire       ena,      // always 1 when the design is powered, so you can ignore it
+
+    input  wire       clk,      // clock
+
+    input  wire       rst_n     // reset_n - low to reset
+
 );
+// VGA signals
+  wire hsync;
 
-    // VGA signals
-    wire hsync;
-    wire vsync;
-    wire [1:0] R;
-    wire [1:0] G;
-    wire [1:0] B;
-    wire video_active;
-    wire [9:0] pix_x;
-    wire [9:0] pix_y;
+  wire vsync;
 
-    // TinyVGA PMOD output mapping
-    assign uo_out = {hsync, B[0], G[0], R[0], vsync, B[1], G[1], R[1]};
+  wire [1:0] R;
 
-    // Unused bidirectional pins
-    assign uio_out = 0;
-    assign uio_oe  = 0;
+  wire [1:0] G;
 
-    // Suppress unused-signal warnings
-    wire _unused_ok = &{ena, ui_in, uio_in};
-    
-    // reg [9:0] counter;
+  wire [1:0] B;
 
-  
-    hvsync_generator vga_sync_gen (
-        .clk        (clk),
-        .reset      (~rst_n),
-        .hsync      (hsync),
-        .vsync      (vsync),
-        .display_on (video_active),
-        .hpos       (pix_x),
-        .vpos       (pix_y)
-    );
+  wire [1:0] R2;
 
-    
-    reg flag_red;
-    reg cross_vertical;
-    reg cross_horizontal;
-    reg cross_white;
-    reg [5:0] pixel_color;
+  wire [1:0] G2;
 
-    
-    assign flag_red = (pix_x >= 1) && (pix_x < 1000) &&
-        (pix_y >= 50)  && (pix_y < 437);
-        
+  wire [1:0] B2;
 
-    
-    assign cross_vertical = (pix_x >= 280) && (pix_x < 360) &&
-        (pix_y >= 120) && (pix_y < 360);
-       
+  wire video_active;
 
-    
-    assign cross_horizontal =(pix_x >= 200) && (pix_x < 440) &&
-        (pix_y >= 200) && (pix_y < 280);
+  wire [9:0] pix_x;
 
-        
+  wire [9:0] pix_y;
+
+ 
+
+  // TinyVGA PMOD
+
+  assign uo_out  = {hsync, B[0], G[0], R[0], vsync, B[1], G[1], R[1]};
+
+ 
+
+  // Unused outputs assigned to 0.
+
+  assign uio_out = 0;
+
+  assign uio_oe  = 0;
+
+ 
+
+  // Suppress unused signals warning
+
+  wire _unused_ok = &{ena, ui_in[7:1], uio_in};
+
+ 
+
+  hvsync_generator vga_sync_gen (
+
+      .clk(clk),
+
+      .reset(~rst_n),
+
+      .hsync(hsync),
+
+      .vsync(vsync),
+
+      .display_on(video_active),
+
+      .hpos(pix_x),
+
+      .vpos(pix_y)
+
+  );
+
+ 
+
+ 
+
+  reg [5:0] color1;
    
-    assign cross_white = cross_vertical || cross_horizontal;
+   
+  
 
+  reg [19:0] center_x, center_y,radius;
+  reg [9:0] rect_top;
+  reg [9:0] rect_left;
+
+  reg shape1, shape2, shape3;
+  reg [7:0] counter;
+  reg [15:0] clk_counter;
+
+ 
+
+ 
+
+  always @(posedge clk)begin
+
+    if(rst_n == 0) begin
+
+      color1 <= 0;
+     
+
+      center_x <= 320;
+
+      center_y <= 240;
+
+      radius <= 100;
+
+      shape1 <= 0;
+
+      shape2 <= 0;
+
+      shape3 <= 0;
+      // counter <=0;
+      // clk_counter <= 0;
+      rect_left <= 120;
+      rect_top  <= 40;
+
+    end
     
-    assign pixel_color =cross_white ? 6'b111111 : flag_red ? 6'b110000:6'b000000;    
-                     
+    else begin
 
-          
+      // clk_counter <= clk_counter +1;
+      // if(clk_counter == 0)begin
+      //   counter <= counter +1;
+      // end
+
+      shape1 <=(pix_x >= rect_left) &&(pix_x <  rect_left + 400) && (pix_y >= rect_top) &&
+     (pix_y <  rect_top + 400);
+    
+  
+    
+    shape2 <=((pix_x >= rect_left + 160) &&(pix_x <  rect_left + 240) &&(pix_y >= rect_top + 80) 
+    &&(pix_y <  rect_top + 320)  )||( (pix_x >= rect_left + 80) &&(pix_x <  rect_left + 320) &&
+       (pix_y >= rect_top + 160) &&  (pix_y <  rect_top + 240) );
+    
        
-    
-    assign R = video_active ? pixel_color[5:4] : 2'b00;
-    assign G = video_active ? pixel_color[3:2] : 2'b00;
-    assign B = video_active ? pixel_color[1:0] : 2'b00;
+
+      color1 <= shape2 ? 6'b111111 : shape1 ? 6'b110000 : 6'b000000;
+         
+                  
+        
+       end
+
+  end
+
+       
+
+ 
+
+  assign R = (video_active)? color1[5:4]:0;
+
+  assign G = (video_active)? color1[3:2]:0;
+
+  assign B = (video_active)? color1[1:0]:0;
+
 
 endmodule
-
-`default_nettype wire
+endmodule
