@@ -190,5 +190,5 @@ module tt_um_vga_example (
   assign B = (video_active)? color1[1:0]:0;
 
 
-endmodule
+
 endmodule
